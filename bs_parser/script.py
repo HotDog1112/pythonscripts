@@ -2,7 +2,10 @@ from bs4 import BeautifulSoup as bs
 import requests
 from prettytable import PrettyTable as pt
 import os
-import telebot as bot
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
 
 session = requests.Session()
 INTEREST_URL = "https://hh.ru/vacancies/devops"
@@ -47,8 +50,34 @@ table.add_rows(rows)
 def rewriteFile(table):
     filename = 'table.txt'
     f = open(filename, 'w')
-    table = str(table)
-    f.write(table)
+    f.write(str(table))
     f.close()
 
 rewriteFile(table)
+
+def sendMail(filepath):
+# to get user and password - export from env
+    user = os.getenv("username")
+    password = os.getenv("password")
+
+    message = MIMEMultipart()
+    message['From'] = user
+    message['To'] = user
+    message['Subject'] = 'List of vacansions'
+
+    filename = os.path.basename(filepath)
+
+    f = open(filename)
+    file_to_send = MIMEText(f.read())
+    f.close()
+    file_to_send.add_header('Content-Disposition', 'attachment', filename=filename)
+    message.attach(file_to_send)
+
+# mail settings
+    server = smtplib.SMTP('smtp.gmail.com', 587)
+    server.starttls()
+    server.login(user, password)
+    server.send_message(message)
+    server.quit()
+
+sendMail('table.txt')
